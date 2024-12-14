@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS updates (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    link TEXT NOT NULL UNIQUE
+);
