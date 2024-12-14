@@ -1,0 +1,15 @@
+{
+  "name": "docker_project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-docker": "docker-compose up --build ",
+    "stop-docker": "docker compose down"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
