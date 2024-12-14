@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Frontend
   next-app:
@@ -10,9 +8,9 @@ services:
       - "3001:3001"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
+      - NEXT_PUBLIC_BACKEND_URL=http://express-app:5001
     networks:
       - app-network
     stdin_open: true
@@ -27,14 +25,79 @@ services:
       - "5001:5001"
     volumes:
       - ./backend:/app
-      - /app/node_modules
+    depends_on:
+      database:
+        condition: service_healthy
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
+      DB_HOST: database
+      DB_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: rss_db
     networks:
       - app-network
     stdin_open: true
     tty: true
 
+  # Database
+  database:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: rss_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:9.0.0
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    networks:
+      - app-network
+    stdin_open: true
+    tty: true
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+    stdin_open: true
+    tty: true
+    depends_on:
+      - express-app
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  postgres_data:
